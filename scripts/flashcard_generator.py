@@ -1,4 +1,4 @@
-from langchain import OpenAI
+from langchain_community.llms import OpenAI
 
 
 class FlashcardGenerator:
