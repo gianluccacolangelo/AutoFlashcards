@@ -12,7 +12,9 @@ class PDFHandler:
             page = self.doc.load_page(page_num)
             for annot in page.annots():
                 if annot.type[0] == 8:  # Highlight
-                    highlight_info = {"text": annot.info["content"], "page": page_num}
+                    rect = annot.rect
+                    highlighted_text = page.get_textbox(rect)
+                    highlight_info = {"text": highlighted_text, "page": page_num}
                     highlights.append(highlight_info)
         return highlights
 
