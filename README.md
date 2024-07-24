@@ -3,12 +3,13 @@ Give me your highlighted book before you go to bed, and you'll have fresh, finel
 
 ## Safely storing API_KEY
 
-1. Create a .env file
-2. Save your API_KEY using key=value format:
+1. Create a `.env` file in the project root directory
+2. Set your API key and preferred LLM provider in the `.env` file:
     ```
-    API_KEY="yourSuperSecretKey"
+    API_KEY=yourSuperSecretKey
+    LLM_PROVIDER=gemini  # Options: gemini, openai, anthropic
     ```
-3. Include .env in .gitignore
+3. Include `.env` in your `.gitignore` file
 
 ## Working on a virtual environment
 
