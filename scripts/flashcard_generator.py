@@ -14,7 +14,7 @@ class LLMProvider(ABC):
 
 class OpenAIProvider(LLMProvider):
     def __init__(self, api_key: str):
-        from langchain_community.llms import OpenAI
+        from langchain_openai import OpenAI
 
         self.llm = OpenAI(api_key=api_key)
 
