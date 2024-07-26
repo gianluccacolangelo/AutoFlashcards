@@ -1,4 +1,5 @@
 import os
+import argparse
 from pdf_handler import PDFHandler
 from highlight_context_extractor import HighlightContextExtractor
 from flashcard_generator import (
@@ -24,10 +25,10 @@ def get_llm_provider(provider_name: str, api_key: str):
     return providers[provider_name](api_key)
 
 
-def main():
+def main(pdf_path: str):
     load_dotenv()
 
-    pdf_path = "sample_01.pdf"
+    pdf_path = "sample_04.pdf"
     pdf_handler = PDFHandler(pdf_path)
     highlights = pdf_handler.extract_highlights()
 
@@ -39,15 +40,23 @@ def main():
     provider_name = os.getenv("LLM_PROVIDER")
 
     # Create the appropiate LLMProvider instance
-    llm_provider = get_llm_provider(provider_name, api_key)
+    llm_provider = get_llm_provider("gemini", api_key)
 
     flashcard_generator = FlashcardGenerator(llm_provider)
-    flashcards = flashcard_generator.generate_flashcards(contexts)
+    all_flashcards = []
+    for context in contexts:
+        flashcards = flashcard_generator.generate_flashcards([context])
+        all_flashcards.extend(flashcards[0])
 
     output_handler = FlashcardOutputHandler()
-    output_handler.save_to_txt(flashcards, "output_flashcards.txt")
-    output_handler.create_anki_deck(flashcards, "My Flashcards")
+    output_handler.save_to_txt(all_flashcards, "output_flashcards.txt")
+    # output_handler.create_anki_deck(flashcards, "My Flashcards")
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        description="Generate flashcards from PDF highlights."
+    )
+    parser.add_argument("pdf_path", type=str, help="Path to the PDF file")
+    args = parser.parse_args()
+    main(args.pdf_path)
