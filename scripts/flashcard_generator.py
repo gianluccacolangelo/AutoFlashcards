@@ -51,7 +51,7 @@ class FlashcardGenerator:
         self.llm_provider = llm_provider
 
     @retry(
-        stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10)
+        stop=stop_after_attempt(10), wait=wait_exponential(multiplier=1, min=4, max=10)
     )
     def _generate_text_with_retry(self, prompt: str) -> str:
         try:
@@ -69,7 +69,7 @@ class FlashcardGenerator:
                 logging.info(f"Processing context {i+1}/{len(contexts)}")
                 prompt = self._create_prompt(context)
                 response = self._generate_text_with_retry(prompt)
-                flashcards = self._parse_response(response)
+                flashcards = self._parse_response(response, contexts[0])
                 all_flashcards.append(flashcards)
                 time.sleep(1)  # Add a small delay between requests
             except Exception as e:
@@ -97,7 +97,9 @@ class FlashcardGenerator:
 
 """
 
-    def _parse_response(self, response: str) -> List[Dict[str, str]]:
+    def _parse_response(
+        self, response: str, context: Dict[str, str]
+    ) -> List[Dict[str, str]]:
         flashcards = []
         current_flashcard = {}
 
@@ -106,11 +108,15 @@ class FlashcardGenerator:
             if line.startswith("## Flashcard"):
                 if current_flashcard:
                     flashcards.append(current_flashcard)
-                current_flashcard = {}
+                current_flashcard = {
+                    "page": context["page"],
+                    "pdf_id": context["pdf_id"],
+                    "rect": context["rect"],
+                }
             elif line.startswith("**Q:**"):
-                current_flashcard["question"] = line[5:].strip()
+                current_flashcard["question"] = line[6:].strip()
             elif line.startswith("**A:**"):
-                current_flashcard["answer"] = line[5:].strip()
+                current_flashcard["answer"] = line[6:].strip()
 
         if current_flashcard:
             flashcards.append(current_flashcard)
