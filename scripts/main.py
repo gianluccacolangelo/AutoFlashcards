@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import os
 import argparse
 from pdf_handler import PDFHandler
@@ -26,12 +28,20 @@ def get_llm_provider(provider_name: str, api_key: str):
 
 
 def main(pdf_path: str):
-    load_dotenv()
+    # Load .env file from the root directory of the project
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    env_path = os.path.abspath(os.path.join(script_dir, "..", ".env"))
+    load_dotenv(dotenv_path=env_path)
 
     pdf_path = os.path.abspath(pdf_path)
+
+    # Step 1: Extract highlights from the PDF
+    print("Step 1: Extracting PDF highlights...")
     pdf_handler = PDFHandler(pdf_path)
     highlights = pdf_handler.extract_highlights()
 
+    # Step 2: Extract contexts from the highlights
+    print("Step 2: Extracting contexts from the highlights...")
     context_extractor = HighlightContextExtractor(pdf_handler)
     contexts = context_extractor.get_contexts(highlights)
 
@@ -39,22 +49,34 @@ def main(pdf_path: str):
     api_key = os.getenv("API_KEY")
     provider_name = os.getenv("LLM_PROVIDER")
 
-    # Create the appropiate LLMProvider instance
-    llm_provider = get_llm_provider("gemini", api_key)
+    # Check if the environment variables are loaded
+    if provider_name is None:
+        raise ValueError("LLM_PROVIDER environment variable is not set.")
+    if api_key is None:
+        raise ValueError("API_KEY environment variable is not set.")
 
+    # Create the appropriate LLMProvider instance
+    print("Step 3: Loading LLM...")
+    llm_provider = get_llm_provider(provider_name, api_key)
+
+    # Step 4: Generate flashcards
+    print("Step 4: Generating flashcards...")
     flashcard_generator = FlashcardGenerator(llm_provider)
     all_flashcards = []
     for context in contexts:
+        print(f"Generating flashcards for context on page {context['page']}...")
         flashcards = flashcard_generator.generate_flashcards([context])
         all_flashcards.extend(flashcards[0])
 
+    # Step 5: Create Anki deck
+    print("Step 5: Creating Anki deck...")
     output_handler = FlashcardOutputHandler()
-    #    output_handler.save_to_txt(all_flashcards, "output_flashcards.txt")
     output_handler.create_anki_deck(
         all_flashcards,
         "My Flashcards",
         pdf_path,
     )
+    print("Anki deck created successfully!")
 
 
 if __name__ == "__main__":
