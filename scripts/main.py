@@ -28,7 +28,7 @@ def get_llm_provider(provider_name: str, api_key: str):
 def main(pdf_path: str):
     load_dotenv()
 
-    pdf_path = "sample_04.pdf"
+    pdf_path = os.path.abspath(pdf_path)
     pdf_handler = PDFHandler(pdf_path)
     highlights = pdf_handler.extract_highlights()
 
@@ -49,8 +49,12 @@ def main(pdf_path: str):
         all_flashcards.extend(flashcards[0])
 
     output_handler = FlashcardOutputHandler()
-    output_handler.save_to_txt(all_flashcards, "output_flashcards.txt")
-    # output_handler.create_anki_deck(flashcards, "My Flashcards")
+    #    output_handler.save_to_txt(all_flashcards, "output_flashcards.txt")
+    output_handler.create_anki_deck(
+        all_flashcards,
+        "My Flashcards",
+        pdf_path,
+    )
 
 
 if __name__ == "__main__":
