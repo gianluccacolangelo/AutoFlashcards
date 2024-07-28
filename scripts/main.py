@@ -63,7 +63,7 @@ def main(pdf_path: str):
     print("Step 4: Generating flashcards...")
     flashcard_generator = FlashcardGenerator(llm_provider)
     all_flashcards = []
-    for context in contexts:
+    for context in contexts[30:33]:
         print(f"Generating flashcards for context on page {context['page']}...")
         flashcards = flashcard_generator.generate_flashcards([context])
         all_flashcards.extend(flashcards[0])

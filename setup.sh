@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script sets up a custom URL scheme to open PDFs at specific pages using the default PDF viewer.
+# This script sets up a custom URL scheme to open PDFs at specific pages using Evince.
 
 # Step 1: Create the Python helper script to handle the custom URL scheme
 cat << 'EOF' | sudo tee /usr/local/bin/open_pdf_page.py > /dev/null
@@ -13,10 +13,10 @@ def open_pdf(url):
     match = re.match(r'documentviewer://open\?file=([^&]+)&page=([0-9]+)', url)
     if match:
         file_path = match.group(1)
-        page = match.group(2)
+        page = int(match.group(2)) - 1  # Adjust for 0-based index
         file_path = re.sub(r'%20', ' ', file_path)  # Decode URL-encoded spaces
-        # Open the PDF with the default PDF viewer
-        subprocess.run(['xdg-open', file_path])
+        # Open the PDF with Evince at the specified page index
+        subprocess.run(['evince', '--page-index=' + str(page), file_path])
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
@@ -40,4 +40,3 @@ EOF
 xdg-mime default documentviewer-url-handler.desktop x-scheme-handler/documentviewer
 
 echo "Setup complete. You can now use the custom URL scheme documentviewer://open?file=/path/to/your/file.pdf&page=page_number"
-

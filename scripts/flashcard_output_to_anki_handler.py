@@ -1,4 +1,5 @@
 import genanki
+import logging
 import os
 import urllib.parse
 
@@ -18,14 +19,30 @@ class FlashcardOutputHandler:
                 },
             ],
         )
-        for flashcard in flashcards:
+
+        valid_flashcards = [fc for fc in flashcards if self._validate_flashcard(fc)]
+
+        for flashcard in valid_flashcards:
             source_link = self._create_source_link(flashcard, pdf_path)
             note = genanki.Note(
                 model=model,
                 fields=[flashcard["question"], flashcard["answer"], source_link],
             )
             deck.add_note(note)
-        genanki.Package(deck).write_to_file(f"{deck_name}.apkg")
+
+        if valid_flashcards:
+            genanki.Package(deck).write_to_file(f"{deck_name}.apkg")
+            logging.info(f"Created Anki deck with {len(valid_flashcards)} flashcards")
+        else:
+            logging.warning("No valid flashcards to create Anki deck")
+
+    def _validate_flashcard(self, flashcard):
+        required_keys = ["question", "answer", "page", "pdf_id", "rect"]
+        if all(key in flashcard for key in required_keys):
+            return True
+        else:
+            logging.warning(f"Invalid flashcard: {flashcard}")
+            return False
 
     def _create_source_link(self, flashcard, pdf_path):
         pdf_name = os.path.basename(pdf_path)
