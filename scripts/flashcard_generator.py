@@ -62,13 +62,13 @@ class FlashcardGenerator:
             raise
 
     def generate_flashcards(
-        self, contexts: List[Dict[str, str]]
-    ) -> List[List[Dict[str, str]]]:
+        self, contexts: List[Dict[str, str]],
+        language: str) -> List[List[Dict[str, str]]]:
         all_flashcards = []
         for i, context in enumerate(contexts):
             try:
                 logging.info(f"Processing context {i+1}/{len(contexts)}")
-                prompt = self._create_prompt(context)
+                prompt = self._create_prompt(context,language)
                 response = self._generate_text_with_retry(prompt)
                 flashcards = self._parse_response(response, contexts[0])
                 all_flashcards.append(flashcards)
@@ -78,7 +78,7 @@ class FlashcardGenerator:
                 continue
         return all_flashcards
 
-    def _create_prompt(self, context: Dict[str, str]) -> str:
+    def _create_prompt(self, context: Dict[str, str],language: str) -> str:
         return f"""Generate a flashcard from the following context:
 
         Context: {context['context']}
@@ -95,6 +95,7 @@ class FlashcardGenerator:
         1. They should be atomic, that means, if you have more than two sentences for an answer, you probably should split it out into other flashcards.
         2. They shouldn't "hardcode" knowledge, they have to aim to grasp the fundamentals of the topic, so you can think from first principles.
         3. When you are studying a particular concept, mechanism, or topic, there should be cards that approach the topic from different perspectives, for example, you may study the prove of a theorem with cloze overlapper, but you may have another flashcard with a concrete application of that theorem.
+        4. Think in english and write the flashcard in {language}
 
 """
 

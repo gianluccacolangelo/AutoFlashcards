@@ -27,7 +27,7 @@ def get_llm_provider(provider_name: str, api_key: str):
     return providers[provider_name](api_key)
 
 
-def main(pdf_path: str):
+def main(pdf_path: str,language: str):
     # Load .env file from the root directory of the project
     script_dir = os.path.dirname(os.path.realpath(__file__))
     env_path = os.path.abspath(os.path.join(script_dir, "..", ".env"))
@@ -63,9 +63,9 @@ def main(pdf_path: str):
     print("Step 4: Generating flashcards...")
     flashcard_generator = FlashcardGenerator(llm_provider)
     all_flashcards = []
-    for context in contexts[30:33]:
+    for context in contexts:
         print(f"Generating flashcards for context on page {context['page']}...")
-        flashcards = flashcard_generator.generate_flashcards([context])
+        flashcards = flashcard_generator.generate_flashcards([context],language)
         all_flashcards.extend(flashcards[0])
 
     # Step 5: Create Anki deck
@@ -84,5 +84,6 @@ if __name__ == "__main__":
         description="Generate flashcards from PDF highlights."
     )
     parser.add_argument("pdf_path", type=str, help="Path to the PDF file")
+    parser.add_argument("language", type=str, help="Flashcards language")
     args = parser.parse_args()
-    main(args.pdf_path)
+    main(args.pdf_path,args.language)
