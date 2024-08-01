@@ -1,7 +1,6 @@
-# pdf_handler.py
 import fitz  # PyMuPDF
 import hashlib
-import uuid
+import os
 
 class PDFHandler:
     def __init__(self, pdf_path):
@@ -10,9 +9,10 @@ class PDFHandler:
         self.pdf_id = self._generate_pdf_id()
 
     def _generate_pdf_id(self):
-        # Generate a unique ID for the PDF based on its content
-        pdf_content = self.doc.tobytes()
-        return hashlib.md5(pdf_content).hexdigest()
+        # Generate a unique ID for the PDF based on its inode
+        file_stats = os.stat(self.pdf_path)
+        unique_string = f"{file_stats.st_ino}"
+        return hashlib.md5(unique_string.encode('utf-8')).hexdigest()
 
     def extract_highlights(self):
         highlights = []
@@ -21,8 +21,8 @@ class PDFHandler:
             for annot in page.annots():
                 if annot.type[0] == 8:  # Highlight
                     rect = annot.rect
-                    highlighted_text = page.get_textbox(rect)
-                    highlight_id = self._generate_highlight_id(page_num, rect)
+                    highlighted_text = page.get_textbox(rect).strip()
+                    highlight_id = self._generate_highlight_id(page_num, rect, highlighted_text)
                     highlight_info = {
                         "highlight_id": highlight_id,
                         "text": highlighted_text,
@@ -33,9 +33,11 @@ class PDFHandler:
                     highlights.append(highlight_info)
         return highlights
 
-    def _generate_highlight_id(self, page_num, rect):
-        unique_string = f"{self.pdf_id}_{page_num}_{rect}"
-        return uuid.uuid5(uuid.NAMESPACE_DNS, unique_string).hex
+    def _generate_highlight_id(self, page_num, rect, highlighted_text):
+        # Normalize the rectangle coordinates to avoid floating point inconsistencies
+        rect_str = f"{rect.x0:.4f}_{rect.y0:.4f}_{rect.x1:.4f}_{rect.y1:.4f}"
+        unique_string = f"{self.pdf_id}_{page_num}_{rect_str}_{highlighted_text}"
+        return hashlib.md5(unique_string.encode('utf-8')).hexdigest()
 
     def get_text_by_pages(self, start_page, end_page):
         text = ""
