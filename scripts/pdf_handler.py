@@ -1,6 +1,5 @@
 import fitz  # PyMuPDF
 import hashlib
-import os
 
 class PDFHandler:
     def __init__(self, pdf_path):
@@ -9,10 +8,13 @@ class PDFHandler:
         self.pdf_id = self._generate_pdf_id()
 
     def _generate_pdf_id(self):
-        # Generate a unique ID for the PDF based on its inode
-        file_stats = os.stat(self.pdf_path)
-        unique_string = f"{file_stats.st_ino}"
-        return hashlib.md5(unique_string.encode('utf-8')).hexdigest()
+        # Generate a unique ID for the PDF based on the content of the first few pages
+        content = ""
+        for page_num in range(min(5, len(self.doc))):  # Use the first 5 pages for ID generation
+            page = self.doc.load_page(page_num)
+            content += page.get_text()
+
+        return hashlib.md5(content.encode('utf-8')).hexdigest()
 
     def extract_highlights(self):
         highlights = []
