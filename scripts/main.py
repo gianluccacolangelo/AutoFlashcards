@@ -13,7 +13,6 @@ from flashcard_generator import (
 from flashcard_output_to_anki_handler import FlashcardOutputHandler
 from dotenv import load_dotenv
 
-
 def get_llm_provider(provider_name: str, api_key: str):
     providers = {
         "openai": OpenAIProvider,
@@ -63,27 +62,31 @@ def main(pdf_path: str):
     flashcard_generator = FlashcardGenerator(llm_provider)
     all_flashcards = []
     for context in contexts:
-        if not flashcard_generator.highlight_exists(context['highlight_id']):
+        highlight_id = context['highlight_id']
+        exists = flashcard_generator.highlight_exists(highlight_id)
+        if not exists:
             print(f"Generating flashcards for context on page {context['page']}...")
             flashcards = flashcard_generator.generate_flashcards([context])
             all_flashcards.extend(flashcards[0])
+            flashcard_generator._store_highlight_id(highlight_id, context)
 
     # Step 5: Create Anki deck
-    print("Step 5: Creating Anki deck...")
-    output_handler = FlashcardOutputHandler()
-    output_handler.create_anki_deck(
-        all_flashcards,
-        "My Flashcards",
-        pdf_path,
-    )
-    print("Anki deck created successfully!")
-
+    if all_flashcards:
+        print("Step 5: Creating Anki deck...")
+        output_handler = FlashcardOutputHandler()
+        output_handler.create_anki_deck(
+            all_flashcards,
+            "My Flashcards",
+            pdf_path,
+        )
+        print("Anki deck created successfully!")
+    else:
+        print("No new highlights found. No new flashcards created.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Generate flashcards from PDF highlights."
     )
     parser.add_argument("pdf_path", type=str, help="Path to the PDF file")
-    parser.add_argument("language", type=str, help="Flashcards language")
     args = parser.parse_args()
-    main(args.pdf_path,args.language)
+    main(args.pdf_path)
