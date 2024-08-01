@@ -1,6 +1,7 @@
+# pdf_handler.py
 import fitz  # PyMuPDF
 import hashlib
-
+import uuid
 
 class PDFHandler:
     def __init__(self, pdf_path):
@@ -21,7 +22,9 @@ class PDFHandler:
                 if annot.type[0] == 8:  # Highlight
                     rect = annot.rect
                     highlighted_text = page.get_textbox(rect)
+                    highlight_id = self._generate_highlight_id(page_num, rect)
                     highlight_info = {
+                        "highlight_id": highlight_id,
                         "text": highlighted_text,
                         "page": page_num + 1,  # Page numbers usually start from 1
                         "pdf_id": self.pdf_id,
@@ -29,6 +32,10 @@ class PDFHandler:
                     }
                     highlights.append(highlight_info)
         return highlights
+
+    def _generate_highlight_id(self, page_num, rect):
+        unique_string = f"{self.pdf_id}_{page_num}_{rect}"
+        return uuid.uuid5(uuid.NAMESPACE_DNS, unique_string).hex
 
     def get_text_by_pages(self, start_page, end_page):
         text = ""
