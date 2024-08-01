@@ -3,7 +3,6 @@ import logging
 import os
 import urllib.parse
 
-
 class FlashcardOutputHandler:
     def create_anki_deck(self, flashcards, deck_name, pdf_path):
         deck = genanki.Deck(2059400110, deck_name)
@@ -48,4 +47,9 @@ class FlashcardOutputHandler:
         pdf_name = os.path.basename(pdf_path)
         encoded_path = urllib.parse.quote(pdf_path)
         page = flashcard["page"]
-        return f'<a href="documentviewer://open?file={encoded_path}&page={page}">{pdf_name} (Page {page})</a>'
+        return f'<a href="documentviewer://open?file={encoded_path}&page={page+1}">{pdf_name} (Page {page+1})</a>'
+
+    def update_source_links(self, old_pdf_path, new_pdf_path):
+        old_encoded_path = urllib.parse.quote(old_pdf_path)
+        new_encoded_path = urllib.parse.quote(new_pdf_path)
+        # Logic to update the source links in Anki notes
