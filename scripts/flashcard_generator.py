@@ -1,8 +1,9 @@
-from abc import ABC, abstractmethod
-from typing import List, Dict
+import os
 import sqlite3
 import time
 import logging
+from abc import ABC, abstractmethod
+from typing import List, Dict
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 class LLMProvider(ABC):
@@ -43,6 +44,7 @@ class GeminiProvider(LLMProvider):
 class FlashcardGenerator:
     def __init__(self, llm_provider: LLMProvider):
         self.llm_provider = llm_provider
+        self.db_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tracked_files.db")
 
     @retry(
         stop=stop_after_attempt(10), wait=wait_exponential(multiplier=1, min=4, max=10)
@@ -88,9 +90,8 @@ class FlashcardGenerator:
 
         1. They should be atomic, that means, if you have more than two sentences for an answer, you probably should split it out into other flashcards.
         2. They shouldn't "hardcode" knowledge, they have to aim to grasp the fundamentals of the topic, so you can think from first principles.
-        3. When you are studying a particular concept, mechanism, or topic, there should be cards that approach the topic from different perspectives, for example, you may study the prove of a theorem, but you may have another flashcard with a concrete application of that theorem.
-        4. Always get sure that the answer is being asked. For example, this is what you shouldn't do: Q: "can we always solve Ax=b for every b?" A: "No. It depends on whether the columns of A are independent and span the space.". Because on which depends never was asked. For having that answer, you should rather put in the question: "On what _depends_ if we can solve Ax=b for every b?".
-        5. When its needed, you can give one to three sentences of context to introduce the question. The answer should always remain atomic, but sometimes its better to situate the question in context.
+        3. When you are studying a particular concept, mechanism, or topic, there should be cards that approach the topic from different perspectives, for example, you may study the prove of a theorem with cloze overlapper, but you may have another flashcard with a concrete application of that theorem.
+
 """
 
     def _parse_response(
@@ -120,7 +121,7 @@ class FlashcardGenerator:
         return flashcards
 
     def highlight_exists(self, highlight_id: str) -> bool:
-        conn = sqlite3.connect("tracked_files.db")
+        conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT(1) FROM highlights WHERE highlight_id = ?", (highlight_id,))
         result = cursor.fetchone()
@@ -128,7 +129,7 @@ class FlashcardGenerator:
         return result[0] > 0
 
     def _store_highlight_id(self, highlight_id: str, context: Dict[str, str]) -> None:
-        conn = sqlite3.connect("tracked_files.db")
+        conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute(
             "INSERT OR IGNORE INTO highlights (highlight_id, pdf_id, page, rect, text) VALUES (?, ?, ?, ?, ?)",
