@@ -88,8 +88,9 @@ class FlashcardGenerator:
 
         1. They should be atomic, that means, if you have more than two sentences for an answer, you probably should split it out into other flashcards.
         2. They shouldn't "hardcode" knowledge, they have to aim to grasp the fundamentals of the topic, so you can think from first principles.
-        3. When you are studying a particular concept, mechanism, or topic, there should be cards that approach the topic from different perspectives, for example, you may study the prove of a theorem with cloze overlapper, but you may have another flashcard with a concrete application of that theorem.
-
+        3. When you are studying a particular concept, mechanism, or topic, there should be cards that approach the topic from different perspectives, for example, you may study the prove of a theorem, but you may have another flashcard with a concrete application of that theorem.
+        4. Always get sure that the answer is being asked. For example, this is what you shouldn't do: Q: "can we always solve Ax=b for every b?" A: "No. It depends on whether the columns of A are independent and span the space.". Because on which depends never was asked. For having that answer, you should rather put in the question: "On what _depends_ if we can solve Ax=b for every b?".
+        5. When its needed, you can give one to three sentences of context to introduce the question. The answer should always remain atomic, but sometimes its better to situate the question in context.
 """
 
     def _parse_response(
