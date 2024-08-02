@@ -1,4 +1,3 @@
-```markdown
 # 📚 AutoFlashcards
 
 **Give me your highlighted book before you go to bed, and you'll have fresh, finely processed flashcards by the morning!**
@@ -6,7 +5,7 @@
 ## ✨ Features
 - 🔍 Extracts highlights from PDF files
 - 📝 Generates context around highlights
-- 🤖 Creates flashcards using advanced language models (LLMs)
+- 🤖 Creates flashcards using LLMs (Gemini, OpenaI, Anthropic)
 - 📥 Exports flashcards to Anki
 - 🔄 Automatically updates flashcards when PDFs are moved or renamed
 - 💾 Stores highlights in a SQLite database to avoid duplicates
