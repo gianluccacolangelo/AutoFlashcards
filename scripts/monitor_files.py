@@ -3,7 +3,7 @@ import sqlite3
 import time
 from inotify_simple import INotify, flags
 
-DATABASE_PATH = 'tracked_files.db'
+DATABASE_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'tracked_files.db')
 TABLE_NAME = 'tracked_files'
 
 def get_files_to_monitor():
@@ -65,4 +65,3 @@ def monitor_files(root="/home/"):
 if __name__ == '__main__':
     dir_path = os.path.dirname(os.path.realpath(__file__))
     monitor_files(root=dir_path)
-
