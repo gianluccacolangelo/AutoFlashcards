@@ -75,9 +75,9 @@ def main(pdf_path: str):
         print("Step 5: Creating Anki deck...")
         output_handler = FlashcardOutputHandler()
         output_handler.create_anki_deck(
-            all_flashcards,
-            "My Flashcards",
-            pdf_path,
+            flashcards = all_flashcards,
+            deck_name = pdf_path.split("/")[-1],
+            pdf_path = pdf_path,
         )
         print("Anki deck created successfully!")
     else:
