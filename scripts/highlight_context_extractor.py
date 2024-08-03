@@ -15,6 +15,7 @@ class HighlightContextExtractor:
             contexts.append(
                 {
                     "highlight": highlight["text"],
+                    "highlight_id": highlight["highlight_id"],
                     "context": context_text,
                     "page": highlight["page"],
                     "pdf_id": highlight["pdf_id"],
