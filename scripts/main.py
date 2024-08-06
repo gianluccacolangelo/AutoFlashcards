@@ -10,6 +10,7 @@ from flashcard_generator import (
     AnthropicProvider,
     GeminiProvider,
 )
+from highlight_manager import HighlightManager
 from flashcard_output_to_anki_handler import FlashcardOutputHandler
 from dotenv import load_dotenv
 
@@ -25,11 +26,33 @@ def get_llm_provider(provider_name: str, api_key: str):
         )
     return providers[provider_name](api_key)
 
-def main(pdf_path: str):
+def delete_highlight_history(pdf_path):
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    db_path = os.path.join(script_dir, "tracked_files.db")
+    highlight_manager = HighlightManager(db_path)
+
+    # Get the current highlight count
+    initial_count = highlight_manager.get_highlight_count(pdf_path)
+
+    # Delete the highlights
+    highlight_manager.delete_highlight_history(pdf_path)
+
+    # Get the new highlight count
+    final_count = highlight_manager.get_highlight_count(pdf_path)
+
+    print(f"Deleted {initial_count - final_count} highlights for {pdf_path}")
+
+
+def main(pdf_path: str, delete_history=False):
+
     # Load .env file from the root directory of the project
     script_dir = os.path.dirname(os.path.realpath(__file__))
     env_path = os.path.abspath(os.path.join(script_dir, "..", ".env"))
     load_dotenv(dotenv_path=env_path)
+
+    if delete_history:
+        delete_highlight_history(pdf_path)
+        return
 
     pdf_path = os.path.abspath(pdf_path)
 
@@ -85,8 +108,9 @@ def main(pdf_path: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Generate flashcards from PDF highlights."
+        description="Generate flashcards from PDF highlights or delete highlight history."
     )
     parser.add_argument("pdf_path", type=str, help="Path to the PDF file")
+    parser.add_argument("--delete-history", action="store_true", help="Delete highlight history for the given PDF")
     args = parser.parse_args()
-    main(args.pdf_path)
+    main(args.pdf_path, args.delete_history)
