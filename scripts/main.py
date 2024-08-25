@@ -43,7 +43,7 @@ def delete_highlight_history(pdf_path):
     print(f"Deleted {initial_count - final_count} highlights for {pdf_path}")
 
 
-def main(pdf_path: str, delete_history=False):
+def main(pdf_path: str, language ,delete_history=False):
 
     # Load .env file from the root directory of the project
     script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -84,12 +84,12 @@ def main(pdf_path: str, delete_history=False):
     print("Step 4: Generating flashcards...")
     flashcard_generator = FlashcardGenerator(llm_provider)
     all_flashcards = []
-    for context in contexts:
+    for context in contexts[110:120]:
         highlight_id = context['highlight_id']
         exists = flashcard_generator.highlight_exists(highlight_id)
         if not exists:
             print(f"Generating flashcards for context on page {context['page']}...")
-            flashcards = flashcard_generator.generate_flashcards([context])
+            flashcards = flashcard_generator.generate_flashcards([context],language)
             all_flashcards.extend(flashcards[0])
             flashcard_generator._store_highlight_id(highlight_id, context)
 
@@ -112,5 +112,6 @@ if __name__ == "__main__":
     )
     parser.add_argument("pdf_path", type=str, help="Path to the PDF file")
     parser.add_argument("--delete-history", action="store_true", help="Delete highlight history for the given PDF")
+    parser.add_argument("language", help="set language of flashcards")
     args = parser.parse_args()
-    main(args.pdf_path, args.delete_history)
+    main(args.pdf_path, args.language ,args.delete_history)
