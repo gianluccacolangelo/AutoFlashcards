@@ -98,17 +98,17 @@ def main(pdf_path: str, language, batch_size: int, delete_history=False):
                 all_flashcards.extend(flashcards[0])
                 flashcard_generator._store_highlight_id(highlight_id, context)
         
-        # Step 5: Create or update Anki deck for this batch
-        if all_flashcards:
-            print(f"Step 5: Creating/updating Anki deck for batch {i//batch_size + 1}...")
-            output_handler.create_anki_deck(
-                flashcards=all_flashcards,
-                deck_name=pdf_path.split("/")[-1],
-                pdf_path=pdf_path,
-            )
-            print(f"Anki deck updated successfully for batch {i//batch_size + 1}!")
-        else:
-            print(f"No new highlights found in batch {i//batch_size + 1}. No new flashcards created.")
+            # Step 5: Create or update Anki deck for this batch
+            if all_flashcards:
+                print(f"Step 5: Creating/updating Anki deck for batch {i//batch_size + 1}...")
+                output_handler.create_anki_deck(
+                    flashcards=all_flashcards,
+                    deck_name=pdf_path.split("/")[-1],
+                    pdf_path=pdf_path,
+                )
+                print(f"Anki deck updated successfully for batch {i//batch_size + 1}!")
+            else:
+                print(f"No new highlights found in batch {i//batch_size + 1}. No new flashcards created.")
 
     print("All batches processed successfully!")
 
