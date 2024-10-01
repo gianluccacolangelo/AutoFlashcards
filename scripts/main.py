@@ -43,7 +43,7 @@ def delete_highlight_history(pdf_path):
     print(f"Deleted {initial_count - final_count} highlights for {pdf_path}")
 
 
-def main(pdf_path: str, language ,delete_history=False):
+def main(pdf_path: str, language, batch_size: int, delete_history=False):
 
     # Load .env file from the root directory of the project
     script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -80,31 +80,37 @@ def main(pdf_path: str, language ,delete_history=False):
     print("Step 3: Loading LLM...")
     llm_provider = get_llm_provider(provider_name, api_key)
 
-    # Step 4: Generate flashcards
-    print("Step 4: Generating flashcards...")
+    # Step 4: Generate flashcards in batches
+    print("Step 4: Generating flashcards in batches...")
     flashcard_generator = FlashcardGenerator(llm_provider)
-    all_flashcards = []
-    for context in contexts[110:120]:
-        highlight_id = context['highlight_id']
-        exists = flashcard_generator.highlight_exists(highlight_id)
-        if not exists:
-            print(f"Generating flashcards for context on page {context['page']}...")
-            flashcards = flashcard_generator.generate_flashcards([context],language)
-            all_flashcards.extend(flashcards[0])
-            flashcard_generator._store_highlight_id(highlight_id, context)
+    output_handler = FlashcardOutputHandler()
+    
+    for i in range(0, len(contexts), batch_size):
+        batch = contexts[i:i+batch_size]
+        all_flashcards = []
+        
+        for context in batch:
+            highlight_id = context['highlight_id']
+            exists = flashcard_generator.highlight_exists(highlight_id)
+            if not exists:
+                print(f"Generating flashcards for context on page {context['page']}...")
+                flashcards = flashcard_generator.generate_flashcards([context], language)
+                all_flashcards.extend(flashcards[0])
+                flashcard_generator._store_highlight_id(highlight_id, context)
+        
+        # Step 5: Create or update Anki deck for this batch
+        if all_flashcards:
+            print(f"Step 5: Creating/updating Anki deck for batch {i//batch_size + 1}...")
+            output_handler.create_anki_deck(
+                flashcards=all_flashcards,
+                deck_name=pdf_path.split("/")[-1],
+                pdf_path=pdf_path,
+            )
+            print(f"Anki deck updated successfully for batch {i//batch_size + 1}!")
+        else:
+            print(f"No new highlights found in batch {i//batch_size + 1}. No new flashcards created.")
 
-    # Step 5: Create Anki deck
-    if all_flashcards:
-        print("Step 5: Creating Anki deck...")
-        output_handler = FlashcardOutputHandler()
-        output_handler.create_anki_deck(
-            flashcards = all_flashcards,
-            deck_name = pdf_path.split("/")[-1],
-            pdf_path = pdf_path,
-        )
-        print("Anki deck created successfully!")
-    else:
-        print("No new highlights found. No new flashcards created.")
+    print("All batches processed successfully!")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -112,6 +118,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("pdf_path", type=str, help="Path to the PDF file")
     parser.add_argument("--delete-history", action="store_true", help="Delete highlight history for the given PDF")
-    parser.add_argument("language", help="set language of flashcards")
+    parser.add_argument("language", help="Set language of flashcards")
+    parser.add_argument("--batch-size", type=int, default=10, help="Number of highlights to process in each batch")
     args = parser.parse_args()
-    main(args.pdf_path, args.language ,args.delete_history)
+    main(args.pdf_path, args.language, args.batch_size, args.delete_history)
