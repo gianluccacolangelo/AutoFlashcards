@@ -84,11 +84,12 @@ def main(pdf_path: str, language, batch_size: int, delete_history=False):
     print("Step 4: Generating flashcards in batches...")
     flashcard_generator = FlashcardGenerator(llm_provider)
     output_handler = FlashcardOutputHandler()
-    
+
+    all_flashcards = []
+
     for i in range(0, len(contexts), batch_size):
         batch = contexts[i:i+batch_size]
-        all_flashcards = []
-        
+
         for context in batch:
             highlight_id = context['highlight_id']
             exists = flashcard_generator.highlight_exists(highlight_id)
@@ -97,7 +98,7 @@ def main(pdf_path: str, language, batch_size: int, delete_history=False):
                 flashcards = flashcard_generator.generate_flashcards([context], language)
                 all_flashcards.extend(flashcards[0])
                 flashcard_generator._store_highlight_id(highlight_id, context)
-        
+
             # Step 5: Create or update Anki deck for this batch
             if all_flashcards:
                 print(f"Step 5: Creating/updating Anki deck for batch {i//batch_size + 1}...")
