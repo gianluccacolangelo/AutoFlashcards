@@ -4,6 +4,7 @@ import time
 import logging
 from abc import ABC, abstractmethod
 from typing import List, Dict
+import anthropic
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 class LLMProvider(ABC):
@@ -25,17 +26,34 @@ class OpenAIProvider(LLMProvider):
 
 class AnthropicProvider(LLMProvider):
     def __init__(self, api_key: str):
-        from langchain_community.llms import Anthropic
-        self.llm = Anthropic(api_key=api_key)
+        import anthropic
+        self.client = anthropic.Anthropic(api_key=api_key)
 
     def generate_text(self, prompt: str) -> str:
-        return self.llm(prompt)
+        message = self.client.messages.create(
+            model="claude-3-sonnet-20240620",
+            max_tokens=1000,
+            temperature=0,
+            system="You are an AI assistant designed to generate flashcards based on given contexts.",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt
+                        }
+                    ]
+                }
+            ]
+        )
+        return message.content[0].text
 
 class GeminiProvider(LLMProvider):
     def __init__(self, api_key: str):
         import google.generativeai as genai
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel("gemini-1.5-pro-001")
+        self.model = genai.GenerativeModel("gemini-1.5-pro-latest")
 
     def generate_text(self, prompt: str) -> str:
         response = self.model.generate_content(prompt)
