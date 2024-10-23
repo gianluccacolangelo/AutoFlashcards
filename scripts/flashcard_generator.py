@@ -31,7 +31,7 @@ class AnthropicProvider(LLMProvider):
 
     def generate_text(self, prompt: str) -> str:
         message = self.client.messages.create(
-            model="claude-3-sonnet-20240620",
+            model="claude-3-sonnet-20240229",
             max_tokens=1000,
             temperature=0,
             system="You are an AI assistant designed to generate flashcards based on given contexts.",
@@ -84,6 +84,7 @@ class FlashcardGenerator:
                 logging.info(f"Processing context {i+1}/{len(contexts)}")
                 prompt = self._create_prompt(context,language)
                 response = self._generate_text_with_retry(prompt)
+                print(response)
                 flashcards = self._parse_response(response, context)
                 all_flashcards.append(flashcards)
                 self._store_highlight_id(context['highlight_id'], context)
@@ -115,28 +116,28 @@ class FlashcardGenerator:
 
 """
 
-    def _parse_response(
-        self, response: str, context: Dict[str, str]
-    ) -> List[Dict[str, str]]:
+    def _parse_response(self, response: str, context: Dict[str, str]) -> List[Dict[str, str]]:
         flashcards = []
+        lines = response.split('\n')
         current_flashcard = {}
 
-        for line in response.split("\n"):
+        for line in lines:
             line = line.strip()
-            if line.startswith("## Flashcard"):
+
+            if line.startswith('Q:') or line.startswith('**Q:**'):
                 if current_flashcard:
                     flashcards.append(current_flashcard)
                 current_flashcard = {
+                    "question": line[6:].strip() if line.startswith('**Q:**') else line[2:].strip(),
                     "page": context["page"],
                     "pdf_id": context["pdf_id"],
                     "rect": context["rect"],
                 }
-            elif line.startswith("**Q:**"):
-                current_flashcard["question"] = line[6:].strip()
-            elif line.startswith("**A:**"):
-                current_flashcard["answer"] = line[6:].strip()
+            elif line.startswith('A:') or line.startswith('**A:**'):
+                current_flashcard["answer"] = line[6:].strip() if line.startswith('**A:**') else line[2:].strip()
 
-        if current_flashcard:
+        # Add the last flashcard if it exists
+        if current_flashcard and "answer" in current_flashcard:
             flashcards.append(current_flashcard)
 
         return flashcards
