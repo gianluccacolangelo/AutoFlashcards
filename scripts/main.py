@@ -26,22 +26,24 @@ def get_llm_provider(provider_name: str, api_key: str):
         )
     return providers[provider_name](api_key)
 
-def delete_highlight_history(pdf_path):
+def delete_highlight_history(pdf_path: str, batch: int = None):
     script_dir = os.path.dirname(os.path.realpath(__file__))
     db_path = os.path.join(script_dir, "tracked_files.db")
     highlight_manager = HighlightManager(db_path)
 
     # Get the current highlight count
-    initial_count = highlight_manager.get_highlight_count(pdf_path)
+    initial_count = highlight_manager.get_highlight_count(pdf_path, batch)
 
     # Delete the highlights
-    highlight_manager.delete_highlight_history(pdf_path)
+    highlight_manager.delete_highlight_history(pdf_path, batch)
 
     # Get the new highlight count
-    final_count = highlight_manager.get_highlight_count(pdf_path)
+    final_count = highlight_manager.get_highlight_count(pdf_path, batch)
 
-    print(f"Deleted {initial_count - final_count} highlights for {pdf_path}")
-
+    if batch:
+        print(f"Deleted {initial_count - final_count} highlights from batch {batch} for {pdf_path}")
+    else:
+        print(f"Deleted {initial_count - final_count} highlights for {pdf_path}")
 
 def main(pdf_path: str, language, batch_size: int, delete_history=False):
 
@@ -67,7 +69,7 @@ def main(pdf_path: str, language, batch_size: int, delete_history=False):
     contexts = context_extractor.get_contexts(highlights)
 
     # Safely get API key and provider name from .env variables
-    api_key = os.getenv("API_KEY")
+    api_key = os.getenv("API_KEY_2")
     provider_name = os.getenv("LLM_PROVIDER")
 
     # Check if the environment variables are loaded
@@ -98,6 +100,7 @@ def main(pdf_path: str, language, batch_size: int, delete_history=False):
                 flashcards = flashcard_generator.generate_flashcards([context], language)
                 all_flashcards.extend(flashcards[0])
                 flashcard_generator._store_highlight_id(highlight_id, context)
+                print(flashcards)
 
             # Step 5: Create or update Anki deck for this batch
             if all_flashcards:
@@ -118,8 +121,17 @@ if __name__ == "__main__":
         description="Generate flashcards from PDF highlights or delete highlight history."
     )
     parser.add_argument("pdf_path", type=str, help="Path to the PDF file")
-    parser.add_argument("--delete-history", action="store_true", help="Delete highlight history for the given PDF")
+    parser.add_argument("--delete-last", type=int, help="Delete the last N highlights")
+    parser.add_argument("--delete-history", action="store_true", help="Delete all highlight history for the given PDF")
     parser.add_argument("language", help="Set language of flashcards")
     parser.add_argument("--batch-size", type=int, default=10, help="Number of highlights to process in each batch")
+    
     args = parser.parse_args()
-    main(args.pdf_path, args.language, args.batch_size, args.delete_history)
+    
+    if args.delete_last:
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        db_path = os.path.join(script_dir, "tracked_files.db")
+        highlight_manager = HighlightManager(db_path)
+        highlight_manager.delete_last_n_highlights(args.pdf_path, args.delete_last)
+    else:
+        main(args.pdf_path, args.language, args.batch_size, args.delete_history)
