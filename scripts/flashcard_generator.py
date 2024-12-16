@@ -53,7 +53,7 @@ class GeminiProvider(LLMProvider):
     def __init__(self, api_key: str):
         import google.generativeai as genai
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel("gemini-1.5-pro-latest")
+        self.model = genai.GenerativeModel("gemini-2.0-flash-exp")
 
     def generate_text(self, prompt: str) -> str:
         response = self.model.generate_content(prompt)
