@@ -8,15 +8,91 @@ class FlashcardOutputHandler:
         deck = genanki.Deck(2059400110, deck_name)
         model = genanki.Model(
             1607392319,
-            "Flashcard with Clickable Source",
-            fields=[{"name": "Question"}, {"name": "Answer"}, {"name": "SourceLink"}],
+            "Flashcard (Apple Minimal Style)",
+            fields=[
+                {"name": "Question"},
+                {"name": "Answer"},
+                {"name": "SourceLink"}
+            ],
             templates=[
                 {
                     "name": "Card 1",
-                    "qfmt": "{{Question}}<br><br><small>{{SourceLink}}</small>",
-                    "afmt": "{{FrontSide}}<hr id='answer'>{{Answer}}",
-                },
+                    "qfmt": """
+<div class="card-wrapper">
+  <div class="card-content">
+    <div class="question">{{Question}}</div>
+    <div class="source">
+      <small>{{SourceLink}}</small>
+    </div>
+  </div>
+</div>
+""",
+                    "afmt": """
+{{FrontSide}}
+
+<hr id="answer" />
+
+<div class="answer">
+  {{Answer}}
+</div>
+"""
+                }
             ],
+            css="""
+/* Body styling */
+body {
+  background-color: #F8F8F8;
+  margin: 0;
+  padding: 0;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #333;
+}
+
+/* Wrapper around the card */
+.card-wrapper {
+  max-width: 600px;
+  margin: 10% auto;
+  padding: 40px;
+  background-color: #FFF;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Content container */
+.card-content {
+  text-align: center;
+}
+
+/* Question text */
+.question {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #0A0A0A;
+}
+
+/* Source link styling */
+.source {
+  font-size: 0.875rem;
+  color: #999;
+}
+
+/* Divider before the answer */
+#answer {
+  margin: 2rem 0;
+  border: none;
+  border-top: 1px solid #EEE;
+}
+
+/* Answer text */
+.answer {
+  font-size: 1.3rem;
+  line-height: 1.6;
+  text-align: left;
+  margin: 0 auto;
+  max-width: 600px;
+}
+"""
         )
 
         valid_flashcards = [fc for fc in flashcards if self._validate_flashcard(fc)]
