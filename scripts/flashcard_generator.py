@@ -53,7 +53,7 @@ class GeminiProvider(LLMProvider):
     def __init__(self, api_key: str):
         import google.generativeai as genai
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel("gemini-2.0-flash-exp")
+        self.model = genai.GenerativeModel("gemini-2.0-flash-thinking-exp")
 
     def generate_text(self, prompt: str) -> str:
         response = self.model.generate_content(prompt)
@@ -101,10 +101,10 @@ class FlashcardGenerator:
 
         Making special emphasis around the highlight I made: {context['highlight']}
 
-        Please format the flashcard as follows
+        Please format the flashcard **exactly** as follows
 
-        Q: [Question]
-        A: [Answer]
+        Q: questionhere
+        A: answerhere
 
         And finally, follow these principles in doing flashcards:
 
