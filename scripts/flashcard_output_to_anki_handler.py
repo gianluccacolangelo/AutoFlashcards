@@ -66,7 +66,7 @@ body {
 /* Question text */
 .question {
   font-size: 1.8rem;
-  font-weight: 600;
+  font-weight: 500;
   margin-bottom: 1rem;
   color: #0A0A0A;
 }
