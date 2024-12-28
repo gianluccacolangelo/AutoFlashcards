@@ -1,0 +1,18 @@
+Q: Can a single statistically significant result definitively prove a natural phenomenon? Why or why not?
+A: No. Even with a low probability of chance occurrence (like 1 in 70), extremely unlikely events will still happen occasionally due to random chance.
+
+Q: What is necessary to demonstrate a natural phenomenon experimentally, beyond isolated significant results?
+A: A reliable method or procedure that consistently produces statistically significant results is needed. This shows the effect is not due to random chance.
+
+Q: Why is it an essential characteristic of experimentation to have limited resources?
+A: Limited resources necessitate careful experimental design, forcing researchers to prioritize which causes of disturbance to address and which to ignore.
+
+Q: In experimental design, what is the impact of limited resources on handling potential causes of disturbance?
+A: Limited resources force researchers to make decisions about which causes of disturbance to control for and which to accept as unavoidable limitations of the study.
+
+Q: How can increasing the size of an experiment impact its sensitivity and ability to disprove the null hypothesis?
+A: A larger experiment increases sensitivity by allowing for the detection of smaller departures from the null hypothesis. This means a larger experiment is more likely to disprove the null hypothesis if it is indeed false.
+
+Q: If an experiment cannot prove the null hypothesis, how can increasing its sensitivity be beneficial?
+A: While an experiment cannot definitively prove the null hypothesis, increasing its sensitivity makes it more likely to detect even small deviations from it. This strengthens the evidence against the null hypothesis if it is false.
+

@@ -125,9 +125,9 @@ if __name__ == "__main__":
     parser.add_argument("--delete-history", action="store_true", help="Delete all highlight history for the given PDF")
     parser.add_argument("language", help="Set language of flashcards")
     parser.add_argument("--batch-size", type=int, default=10, help="Number of highlights to process in each batch")
-    
+
     args = parser.parse_args()
-    
+
     if args.delete_last:
         script_dir = os.path.dirname(os.path.realpath(__file__))
         db_path = os.path.join(script_dir, "tracked_files.db")
