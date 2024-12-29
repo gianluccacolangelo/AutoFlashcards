@@ -14,18 +14,18 @@ class FlashcardOutputHandler:
     def _compress_pdf(self, input_pdf_path):
         """Compress PDF and return the path to the compressed file"""
         doc = fitz.open(input_pdf_path)
-        
+
         # Create a temporary file for the compressed PDF
         with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
             compressed_path = tmp_file.name
-        
+
         # Save with compression
-        doc.save(compressed_path, 
+        doc.save(compressed_path,
                 garbage=4,  # Maximum garbage collection
                 deflate=True,  # Use deflate compression
                 clean=True,  # Clean unused elements
                 linear=True)  # Optimize for web viewing
-        
+
         doc.close()
         return compressed_path
 
@@ -34,158 +34,132 @@ class FlashcardOutputHandler:
         # Generate a unique filename based on the PDF content
         pdf_handler = PDFHandler(pdf_path)
         unique_name = f"_source_{pdf_handler.pdf_id[:8]}.pdf"  # Prefix with _source_ to ensure Anki treats it as media
-        
+
         # Compress the PDF
         compressed_path = self._compress_pdf(pdf_path)
-        
+
         # Add to media files list with the correct name mapping
         self.media_files.append((compressed_path, unique_name))
-        
+
         return unique_name
 
     def create_anki_deck(self, flashcards, deck_name, pdf_path):
         # Prepare PDF for Anki
         anki_pdf_name = self._prepare_pdf_for_anki(pdf_path)
         original_pdf_name = os.path.basename(pdf_path)
-        
+
         deck = genanki.Deck(2059400110, deck_name)
         model = genanki.Model(
             1607392319,
-            "Flashcard (Apple Minimal Style)",
+            "Simple Image Card",  # Changed to match the Anki note type
             fields=[
-                {"name": "Question"},
-                {"name": "Answer"},
-                {"name": "SourceLink"},
-                {"name": "PDFFile"},
-                {"name": "PageNumber"}
+                {"name": "Front"},  # Question
+                {"name": "Back"},   # Answer
+                {"name": "Image"}   # Context image
             ],
             templates=[
                 {
                     "name": "Card 1",
                     "qfmt": """
-<div class="card-wrapper">
-  <div class="card-content">
-    <div class="question">{{Question}}</div>
-    <div class="source">
-      <small>{{SourceLink}}</small>
-    </div>
-  </div>
-</div>
+<div class="front">{{Front}}</div>
 """,
                     "afmt": """
 {{FrontSide}}
+<hr>
+<div class="back">{{Back}}</div>
 
-<hr id="answer" />
+<button onclick="toggleImage()" class="toggle-btn" id="toggleBtn">View document</button>
 
-<div class="answer">
-  {{Answer}}
+<div class="image-container" id="imageContainer" style="display: none;">
+    <img src="{{Image}}" 
+         style="
+           width:100% !important;
+           max-width:98.7% !important;
+           max-height:100% !important;
+           display:block !important;
+           margin:10 10 10 10 !important;
+         "
+         onload="centerImage()">
 </div>
+<script>
+function centerImage() {
+    const container = document.getElementById('imageContainer');
+    const img = container.querySelector('img');
+    if (img.height > container.clientHeight) {
+        container.scrollTop = (container.scrollHeight - container.clientHeight) / 2;
+    }
+}
 
-<div class="pdf-section">
-  <div class="pdf-info">Source: {{PDFFile}} (Page {{PageNumber}})</div>
-  <div class="pdf-viewer">
-    <iframe src="{{PDFFile}}#page={{PageNumber}}" type="application/pdf" width="100%" height="600px" class="pdf-frame"></iframe>
-  </div>
-</div>
+function toggleImage() {
+    const container = document.getElementById('imageContainer');
+    const btn = document.getElementById('toggleBtn');
+    if (container.style.display === 'none') {
+        container.style.display = 'block';
+        btn.textContent = 'Hide document';
+        setTimeout(centerImage, 50);
+    } else {
+        container.style.display = 'none';
+        btn.textContent = 'View document';
+    }
+}
+</script>
 """,
                 }
             ],
             css="""
-/* Body styling */
-body {
-  background-color: #F8F8F8;
-  margin: 0;
-  padding: 0;
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  color: #333;
-}
-
-/* Wrapper around the card */
-.card-wrapper {
-  max-width: 800px;  /* Increased for better PDF viewing */
-  margin: 5% auto;
-  padding: 40px;
-  background-color: #FFF;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-}
-
-/* Content container */
-.card-content {
-  text-align: center;
-}
-
-/* Question text */
-.question {
-  font-size: 1.8rem;
-  font-weight: 500;
-  margin-bottom: 1rem;
-  color: #0A0A0A;
-}
-
-/* Source link styling */
-.source {
-  font-size: 0.875rem;
-  color: #999;
-}
-
-/* Divider before the answer */
-#answer {
-  margin: 2rem 0;
-  border: none;
-  border-top: 1px solid #EEE;
-}
-
-/* Answer text */
-.answer {
-  font-size: 1.3rem;
-  line-height: 1.6;
-  text-align: left;
-  margin: 0 auto;
-  max-width: 800px;  /* Increased for better readability */
-}
-
-/* PDF section styling */
-.pdf-section {
-  margin-top: 2rem;
-  padding: 20px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-.pdf-info {
-  text-align: center;
-  font-size: 0.875rem;
-  color: #666;
-  margin-bottom: 1rem;
-}
-
-.pdf-viewer {
-  width: 100%;
-  margin: 0 auto;
-  background: #f5f5f5;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.pdf-frame {
-  border: none;
-  display: block;
-  margin: 0 auto;
-  background: white;
-}
-
-/* Make the PDF viewer responsive */
-@media (max-width: 768px) {
-  .card-wrapper {
+.card {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-size: 20px;
+    text-align: center;
+    color: black;
+    background-color: white;
     padding: 20px;
-    margin: 2% auto;
-  }
-  
-  .pdf-frame {
-    height: 400px;  /* Smaller height on mobile */
-  }
+}
+
+.front {
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+.back {
+    margin: 20px 0;
+}
+
+.toggle-btn {
+    background-color: transparent;
+    border: none;
+    color: #007AFF;
+    padding: 8px 16px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 15px;
+    font-weight: 500;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.toggle-btn:hover {
+    background-color: rgba(0, 122, 255, 0.1);
+}
+
+.toggle-btn:active {
+    background-color: rgba(0, 122, 255, 0.2);
+}
+
+.image-container {
+    max-height: 300px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin: 10px auto;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 """
         )
@@ -193,44 +167,35 @@ body {
         valid_flashcards = [fc for fc in flashcards if self._validate_flashcard(fc)]
 
         for flashcard in valid_flashcards:
-            source_link = self._create_source_link(flashcard, original_pdf_name)
             note = genanki.Note(
                 model=model,
                 fields=[
-                    flashcard["question"],
-                    flashcard["answer"],
-                    source_link,
-                    anki_pdf_name,
-                    str(flashcard["page"] + 1)
-                ],
+                    flashcard["question"],                    # Front
+                    flashcard["answer"],                      # Back
+                    flashcard["context_image"]                # Image
+                ]
             )
             deck.add_note(note)
+
+            # Add image to media files
+            if "context_image" in flashcard:
+                self.media_files.append((
+                    os.path.join("pdf_images", flashcard["context_image"]),
+                    flashcard["context_image"]
+                ))
 
         if valid_flashcards:
             # Create a package with the deck and media files
             package = genanki.Package(deck)
-            
-            # Add the media files with their correct names
-            media_files_with_names = []
-            for temp_path, dest_name in self.media_files:
-                new_path = os.path.join(os.path.dirname(temp_path), dest_name)
-                shutil.copy2(temp_path, new_path)
-                media_files_with_names.append(new_path)
-            
-            package.media_files = media_files_with_names
-            
-            # Write the package to file
+            package.media_files = [path for path, _ in self.media_files]
             output_file = f"{deck_name}.apkg"
             package.write_to_file(output_file)
-            
+
             # Clean up temporary files
             for temp_file, _ in self.media_files:
                 if os.path.exists(temp_file):
                     os.remove(temp_file)
-            for media_file in media_files_with_names:
-                if os.path.exists(media_file):
-                    os.remove(media_file)
-            
+
             logging.info(f"Created Anki deck with {len(valid_flashcards)} flashcards")
         else:
             logging.warning("No valid flashcards to create Anki deck")
