@@ -20,6 +20,7 @@ class HighlightContextExtractor:
                     "page": highlight["page"],
                     "pdf_id": highlight["pdf_id"],
                     "rect": highlight["rect"],
+                    "pdf_path": self.pdf_handler.pdf_path
                 }
             )
         return contexts
