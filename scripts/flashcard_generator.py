@@ -10,6 +10,7 @@ from PyPDF2 import PdfReader
 from pdf2image import convert_from_path
 from PIL import Image, ImageOps
 import hashlib
+from image_handler import PDFImageHandler
 
 class LLMProvider(ABC):
     @abstractmethod
@@ -82,17 +83,33 @@ class FlashcardGenerator:
         self, contexts: List[Dict[str, str]],
         language: str
     ) -> List[List[Dict[str, str]]]:
+        # Add image handler
+        image_handler = PDFImageHandler()
+        
         all_flashcards = []
         for i, context in enumerate(contexts):
             try:
                 logging.info(f"Processing context {i+1}/{len(contexts)}")
-                prompt = self._create_prompt(context,language)
+                
+                # Generate context image
+                context_image = image_handler.create_context_image(
+                    context['pdf_path'],  # Make sure this is passed in the context
+                    context['page'],
+                    context['pdf_id']
+                )
+                
+                prompt = self._create_prompt(context, language)
                 response = self._generate_text_with_retry(prompt)
                 print(response)
                 flashcards = self._parse_response(response, context)
+                
+                # Add image to each flashcard
+                for flashcard in flashcards:
+                    flashcard['context_image'] = context_image
+                    
                 all_flashcards.append(flashcards)
                 self._store_highlight_id(context['highlight_id'], context)
-                time.sleep(1)  # Add a small delay between requests
+                time.sleep(1)
             except Exception as e:
                 logging.error(f"Error processing context {i+1}: {e}")
                 continue
@@ -136,6 +153,7 @@ class FlashcardGenerator:
                     "page": context["page"],
                     "pdf_id": context["pdf_id"],
                     "rect": context["rect"],
+                    "pdf_path": context.get("pdf_path", "")  # Add pdf_path to the flashcard
                 }
             elif line.startswith('A:') or line.startswith('**A:**'):
                 current_flashcard["answer"] = line[6:].strip() if line.startswith('**A:**') else line[2:].strip()
