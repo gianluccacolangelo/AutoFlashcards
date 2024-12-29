@@ -13,74 +13,6 @@ from pathlib import Path
 class FlashcardOutputHandler:
     def __init__(self):
         self.media_files = []
-        self.media_path = self._get_media_path()
-        if self.media_path:
-            logging.info(f"Using Anki media path: {self.media_path}")
-        else:
-            logging.warning("Could not find Anki media collection path")
-
-    def _get_media_path(self):
-        """Get the Anki media collection path based on context (add-on vs standalone)"""
-        try:
-            # First try: Running as Anki add-on
-            from aqt import mw
-            if mw and mw.pm:
-                addon_media_path = os.path.join(mw.pm.profileFolder(), "collection.media")
-                if os.path.exists(addon_media_path):
-                    return addon_media_path
-        except ImportError:
-            pass
-
-        # Second try: Running as standalone, check common Anki locations
-        possible_paths = []
-        
-        # Windows path
-        if os.name == 'nt':
-            possible_paths.append(Path.home() / "AppData/Roaming/Anki2")
-        
-        # Linux paths
-        elif os.name == 'posix':
-            possible_paths.extend([
-                Path.home() / ".local/share/Anki2",
-                Path.home() / "Anki2"  # Legacy location
-            ])
-            
-        # MacOS paths
-        if os.name == 'posix' and os.path.exists(str(Path.home() / "Library")):
-            possible_paths.append(Path.home() / "Library/Application Support/Anki2")
-
-        # Try to find the active profile
-        for base_path in possible_paths:
-            if not base_path.exists():
-                continue
-
-            # Try to get active profile from prefs.db
-            prefs_db = base_path / "prefs.db"
-            if prefs_db.exists():
-                try:
-                    conn = sqlite3.connect(str(prefs_db))
-                    cursor = conn.cursor()
-                    cursor.execute("SELECT value FROM prefs WHERE key='activeProfile'")
-                    result = cursor.fetchone()
-                    conn.close()
-
-                    if result and result[0]:
-                        profile_name = result[0]
-                        media_path = base_path / profile_name / "collection.media"
-                        if media_path.exists():
-                            return str(media_path)
-                except sqlite3.Error as e:
-                    logging.debug(f"Error reading prefs.db: {e}")
-                    continue
-
-            # Fallback: Look for profile folders directly
-            for profile_dir in base_path.iterdir():
-                if profile_dir.is_dir():
-                    media_path = profile_dir / "collection.media"
-                    if media_path.exists():
-                        return str(media_path)
-
-        return None
 
     def _compress_pdf(self, input_pdf_path):
         """Compress PDF and return the path to the compressed file"""
@@ -115,11 +47,6 @@ class FlashcardOutputHandler:
         return unique_name
 
     def create_anki_deck(self, flashcards, deck_name, pdf_path):
-        if not self.media_path:
-            logging.warning("Could not find Anki media collection path. Images will only be included in the package.")
-        else:
-            logging.info(f"Using Anki media path: {self.media_path}")
-
         # Prepare PDF for Anki
         anki_pdf_name = self._prepare_pdf_for_anki(pdf_path)
         original_pdf_name = os.path.basename(pdf_path)
@@ -243,16 +170,12 @@ function toggleImage() {
         valid_flashcards = [fc for fc in flashcards if self._validate_flashcard(fc)]
 
         for flashcard in valid_flashcards:
-            # Copy image to Anki media collection if possible
-            if "context_image" in flashcard and self.media_path:
-                source_path = os.path.join("pdf_images", flashcard["context_image"])
-                dest_path = os.path.join(self.media_path, flashcard["context_image"])
-                if os.path.exists(source_path):
-                    try:
-                        shutil.copy2(source_path, dest_path)
-                        logging.info(f"Copied image to Anki media: {flashcard['context_image']}")
-                    except Exception as e:
-                        logging.error(f"Failed to copy image to Anki media: {e}")
+            # Simply add the image to media_files list
+            if "context_image" in flashcard:
+                self.media_files.append((
+                    os.path.join("pdf_images", flashcard["context_image"]),
+                    flashcard["context_image"]
+                ))
 
             note = genanki.Note(
                 model=model,
@@ -263,13 +186,6 @@ function toggleImage() {
                 ]
             )
             deck.add_note(note)
-
-            # Keep track of media files for the package
-            if "context_image" in flashcard:
-                self.media_files.append((
-                    os.path.join("pdf_images", flashcard["context_image"]),
-                    flashcard["context_image"]
-                ))
 
         if valid_flashcards:
             package = genanki.Package(deck)
