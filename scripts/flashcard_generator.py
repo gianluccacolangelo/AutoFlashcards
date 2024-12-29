@@ -6,6 +6,10 @@ from abc import ABC, abstractmethod
 from typing import List, Dict
 import anthropic
 from tenacity import retry, stop_after_attempt, wait_exponential
+from PyPDF2 import PdfReader
+from pdf2image import convert_from_path
+from PIL import Image, ImageOps
+import hashlib
 
 class LLMProvider(ABC):
     @abstractmethod
