@@ -9,6 +9,7 @@ from pdf_handler import PDFHandler
 import json
 import sqlite3
 from pathlib import Path
+import re
 
 class FlashcardOutputHandler:
     def __init__(self):
@@ -46,6 +47,13 @@ class FlashcardOutputHandler:
 
         return unique_name
 
+    def _prepare_context_image(self, original_filename):
+        """Prepare image filename for Anki by ensuring it follows Anki's naming conventions"""
+        # Remove any problematic characters and ensure it starts with underscore
+        # Anki requires media files to start with underscore if they're references in HTML
+        safe_name = "_" + re.sub(r'[^\w\s-]', '', original_filename)
+        return safe_name
+
     def create_anki_deck(self, flashcards, deck_name, pdf_path):
         # Prepare PDF for Anki
         anki_pdf_name = self._prepare_pdf_for_anki(pdf_path)
@@ -74,7 +82,7 @@ class FlashcardOutputHandler:
 <button onclick="toggleImage()" class="toggle-btn" id="toggleBtn">View document</button>
 
 <div class="image-container" id="imageContainer" style="display: none;">
-    <img src="{{Image}}" 
+    <img src="{{Image}}"
          style="
            width:100% !important;
            max-width:98.7% !important;
@@ -170,28 +178,50 @@ function toggleImage() {
         valid_flashcards = [fc for fc in flashcards if self._validate_flashcard(fc)]
 
         for flashcard in valid_flashcards:
-            # Simply add the image to media_files list
             if "context_image" in flashcard:
-                self.media_files.append((
-                    os.path.join("pdf_images", flashcard["context_image"]),
-                    flashcard["context_image"]
-                ))
-
-            note = genanki.Note(
-                model=model,
-                fields=[
-                    flashcard["question"],
-                    flashcard["answer"],
-                    flashcard["context_image"]
-                ]
-            )
-            deck.add_note(note)
+                source_path = os.path.join("pdf_images", flashcard["context_image"])
+                if os.path.exists(source_path):
+                    # Prepare a safe filename for Anki
+                    anki_filename = self._prepare_context_image(flashcard["context_image"])
+                    
+                    # Store both the source path AND the intended Anki filename
+                    self.media_files.append((source_path, anki_filename))
+                    
+                    note = genanki.Note(
+                        model=model,
+                        fields=[
+                            flashcard["question"],
+                            flashcard["answer"],
+                            anki_filename  # This should match the filename in media mapping
+                        ]
+                    )
+                    deck.add_note(note)
 
         if valid_flashcards:
             package = genanki.Package(deck)
-            package.media_files = [path for path, _ in self.media_files]
+            
+            # Create a list of actual file paths for the media files
+            media_files = []
+            for source_path, anki_filename in self.media_files:
+                if os.path.exists(source_path):
+                    # Copy the file to a temporary location with the correct Anki filename
+                    temp_path = os.path.join(os.path.dirname(source_path), anki_filename)
+                    shutil.copy2(source_path, temp_path)
+                    media_files.append(temp_path)
+                    logging.info(f"Added media file: {temp_path}")
+            
+            # Set the media_files property
+            package.media_files = media_files
+            
+            # Write the package
             output_file = f"{deck_name}.apkg"
             package.write_to_file(output_file)
+            
+            # Clean up temporary files
+            for temp_path in media_files:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                
             logging.info(f"Created Anki deck with {len(valid_flashcards)} flashcards")
         else:
             logging.warning("No valid flashcards to create Anki deck")
