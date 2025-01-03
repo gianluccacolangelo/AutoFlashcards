@@ -69,7 +69,7 @@ def main(pdf_path: str, language, batch_size: int, delete_history=False):
     contexts = context_extractor.get_contexts(highlights)
 
     # Safely get API key and provider name from .env variables
-    api_key = os.getenv("API_KEY_2")
+    api_key = os.getenv("API_KEY")
     provider_name = os.getenv("LLM_PROVIDER")
 
     # Check if the environment variables are loaded
