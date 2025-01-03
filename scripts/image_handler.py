@@ -57,4 +57,4 @@ class PDFImageHandler:
         concatenated_image = ImageOps.exif_transpose(concatenated_image)
         concatenated_image.save(output_path, "JPEG", quality=10, optimize=True)
 
-        return output_file 
+        return output_file
