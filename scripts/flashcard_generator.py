@@ -85,28 +85,28 @@ class FlashcardGenerator:
     ) -> List[List[Dict[str, str]]]:
         # Add image handler
         image_handler = PDFImageHandler()
-        
+
         all_flashcards = []
         for i, context in enumerate(contexts):
             try:
                 logging.info(f"Processing context {i+1}/{len(contexts)}")
-                
+
                 # Generate context image
                 context_image = image_handler.create_context_image(
                     context['pdf_path'],  # Make sure this is passed in the context
                     context['page'],
                     context['pdf_id']
                 )
-                
+
                 prompt = self._create_prompt(context, language)
                 response = self._generate_text_with_retry(prompt)
                 print(response)
                 flashcards = self._parse_response(response, context)
-                
+
                 # Add image to each flashcard
                 for flashcard in flashcards:
                     flashcard['context_image'] = context_image
-                    
+
                 all_flashcards.append(flashcards)
                 self._store_highlight_id(context['highlight_id'], context)
                 time.sleep(1)
