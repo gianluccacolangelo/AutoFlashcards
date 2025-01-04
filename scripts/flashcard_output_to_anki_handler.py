@@ -13,39 +13,7 @@ import re
 
 class FlashcardOutputHandler:
     def __init__(self):
-        self.media_files = []
-
-    def _compress_pdf(self, input_pdf_path):
-        """Compress PDF and return the path to the compressed file"""
-        doc = fitz.open(input_pdf_path)
-
-        # Create a temporary file for the compressed PDF
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
-            compressed_path = tmp_file.name
-
-        # Save with compression
-        doc.save(compressed_path,
-                garbage=4,  # Maximum garbage collection
-                deflate=True,  # Use deflate compression
-                clean=True,  # Clean unused elements
-                linear=True)  # Optimize for web viewing
-
-        doc.close()
-        return compressed_path
-
-    def _prepare_pdf_for_anki(self, pdf_path):
-        """Prepare PDF for Anki by compressing and generating a unique filename"""
-        # Generate a unique filename based on the PDF content
-        pdf_handler = PDFHandler(pdf_path)
-        unique_name = f"_source_{pdf_handler.pdf_id[:8]}.pdf"  # Prefix with _source_ to ensure Anki treats it as media
-
-        # Compress the PDF
-        compressed_path = self._compress_pdf(pdf_path)
-
-        # Add to media files list with the correct name mapping
-        self.media_files.append((compressed_path, unique_name))
-
-        return unique_name
+        self.media_files = set()
 
     def _prepare_context_image(self, original_filename):
         """Prepare image filename for Anki by ensuring it follows Anki's naming conventions"""
@@ -55,10 +23,6 @@ class FlashcardOutputHandler:
         return safe_name
 
     def create_anki_deck(self, flashcards, deck_name, pdf_path):
-        # Prepare PDF for Anki
-        anki_pdf_name = self._prepare_pdf_for_anki(pdf_path)
-        original_pdf_name = os.path.basename(pdf_path)
-
         deck = genanki.Deck(2059400110, deck_name)
         model = genanki.Model(
             1607392319,
@@ -184,15 +148,15 @@ function toggleImage() {
                     # Prepare a safe filename for Anki
                     anki_filename = self._prepare_context_image(flashcard["context_image"])
                     
-                    # Store both the source path AND the intended Anki filename
-                    self.media_files.append((source_path, anki_filename))
+                    # Add to set instead of list to prevent duplicates
+                    self.media_files.add((source_path, anki_filename))
                     
                     note = genanki.Note(
                         model=model,
                         fields=[
                             flashcard["question"],
                             flashcard["answer"],
-                            anki_filename  # This should match the filename in media mapping
+                            anki_filename
                         ]
                     )
                     deck.add_note(note)
@@ -200,17 +164,15 @@ function toggleImage() {
         if valid_flashcards:
             package = genanki.Package(deck)
             
-            # Create a list of actual file paths for the media files
+            # Convert set to list of unique media files
             media_files = []
             for source_path, anki_filename in self.media_files:
                 if os.path.exists(source_path):
-                    # Copy the file to a temporary location with the correct Anki filename
                     temp_path = os.path.join(os.path.dirname(source_path), anki_filename)
                     shutil.copy2(source_path, temp_path)
                     media_files.append(temp_path)
                     logging.info(f"Added media file: {temp_path}")
             
-            # Set the media_files property
             package.media_files = media_files
             
             # Write the package
